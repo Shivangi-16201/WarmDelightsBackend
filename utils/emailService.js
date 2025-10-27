@@ -13,18 +13,20 @@ const transporter = nodemailer.createTransport({
 
 // Send order confirmation email (regular order, not custom order)
 const sendOrderConfirmation = async (order, customer) => {
+  console.log("SEND ORDER CONFIRMATION:",process.env.EMAIL_USER)
   try {
     const mailOptions = {
+      // from: "warmdelights11@gmail.com",
       from: `<${process.env.EMAIL_USER}>`,
       to: customer.email,
       subject: `Order Confirmation - ${order.orderId}`,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
-          ... [original order email HTML here] ...
-        </div>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
+      ... [original order email HTML here] ...
+      </div>
       `,
     };
-
+    
     await transporter.sendMail(mailOptions);
     console.log('Order confirmation email sent to:', customer.email);
   } catch (error) {
@@ -38,6 +40,7 @@ const sendCustomOrderConfirmation = async (customOrder) => {
   try {
     // 1. Customer confirmation
     const customerMailOptions = {
+      // from: "warmdelights11@gmail.com",
       from: `<${process.env.EMAIL_USER}>`,
       to: customOrder.email,
       subject: 'Custom Order Request Received',
