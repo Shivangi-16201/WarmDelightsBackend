@@ -14,13 +14,6 @@ pnpm-debug.log*
 .env.*
 !.env.example
 
-# Database, local test directories, uploads
-uploads/
-*.sqlite
-*.sqlite3
-*.db
-*.tgz
-
 # Build outputs
 dist/
 build/
