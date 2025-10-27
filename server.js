@@ -4,46 +4,61 @@ const cors = require('cors');
 const path = require('path');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const galleryRoutes = require('./routes/gallery');
-const orderRoutes = require('./routes/orders');
 const fs = require('fs');
 require('dotenv').config();
 
 const connectDB = require('./config/database');
 const trackAnalytics = require('./middleware/analytics');
 
+const galleryRoutes = require('./routes/gallery');
+const orderRoutes = require('./routes/orders');
+
 const app = express();
 
-// Add this line to fix rate limit error
-app.set('trust proxy', 1); // Trust first proxy
+// Add this to fix rate limit error (for proxies like Render/Heroku)
+app.set('trust proxy', 1);
 
 // Connect to database
 connectDB();
 
+// Create uploads directory if not exists
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
   console.log('Created uploads directory');
 }
 
-// Security middleware with proper CSP configuration for images
+// Helmet security + proper CSP for images
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "blob:", "http://localhost:5000", "http://localhost:3000"],
+      imgSrc: ["'self'", "data:", "blob:", "https://warmdelightsbackend.onrender.com", "https://warmdelights11.netlify.app"],
       scriptSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       fontSrc: ["'self'"],
-      connectSrc: ["'self'", "http://localhost:5000", "http://localhost:3000"],
+      connectSrc: ["'self'", "https://warmdelightsbackend.onrender.com", "https://warmdelights11.netlify.app"],
     },
   },
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-// CORS configuration
+// Updated CORS config to allow both localhost and Netlify
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5000',
+  'https://warmdelights11.netlify.app',
+  'https://warmdelightsbackend.onrender.com'
+];
+
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      return callback(null, true);
+    }
+    return callback(new Error('CORS not allowed from this origin: ' + origin), false);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -51,21 +66,21 @@ app.use(cors({
 
 // Login-specific rate limiting - more restrictive
 const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 login requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 5,
   message: {
     error: 'Too many login attempts from this IP, please try again later.',
     retryAfter: '15 minutes'
   },
-  skipSuccessfulRequests: true, // Don't count successful requests
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  skipSuccessfulRequests: true,
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 // General rate limiting - less restrictive for other endpoints
 const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 100,
   message: {
     error: 'Too many requests from this IP, please try again later.',
     retryAfter: '15 minutes'
@@ -74,44 +89,43 @@ const generalLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Apply login-specific rate limiting to auth routes
+// Apply login limiter to auth routes
 app.use('/api/auth/login', loginLimiter);
-app.use('/api/auth/register', loginLimiter); // Also limit registration attempts
-
-// Apply general rate limiting to all other routes
+app.use('/api/auth/register', loginLimiter);
 app.use(generalLimiter);
 
-// Middleware
+// Body parsers
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Custom static file serving with proper headers for images
+// Serve uploads dir with CORS headers
 app.use('/uploads', (req, res, next) => {
-  // Set proper headers for image files
-  res.setHeader('Access-Control-Allow-Origin', process.env.CLIENT_URL || 'http://localhost:3000');
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigins.join(','));
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   res.setHeader('Access-Control-Allow-Methods', 'GET');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  
-  // Cache images for better performance
+
   if (req.url.match(/\.(jpg|jpeg|png|gif|webp)$/)) {
-    res.setHeader('Cache-Control', 'public, max-age=86400'); // 24 hours
+    res.setHeader('Cache-Control', 'public, max-age=86400');
   }
-  
+
   next();
 }, express.static(path.join(__dirname, 'uploads'), {
-  setHeaders: (res, path) => {
-    if (path.endsWith('.jpg') || path.endsWith('.jpeg')) {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.jpg') || filePath.endsWith('.jpeg')) {
       res.setHeader('Content-Type', 'image/jpeg');
-    } else if (path.endsWith('.png')) {
+    } else if (filePath.endsWith('.png')) {
       res.setHeader('Content-Type', 'image/png');
-    } else if (path.endsWith('.gif')) {
+    } else if (filePath.endsWith('.gif')) {
       res.setHeader('Content-Type', 'image/gif');
-    } else if (path.endsWith('.webp')) {
+    } else if (filePath.endsWith('.webp')) {
       res.setHeader('Content-Type', 'image/webp');
     }
   }
 }));
+
+// Add favicon.ico handler (no favicon, but no error)
+app.get('/favicon.ico', (req, res) => res.status(204));
 
 // Analytics middleware
 app.use(trackAnalytics);
@@ -125,16 +139,19 @@ app.use('/api/gallery', galleryRoutes);
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/cart', require('./routes/cart'));
 
-// Add a simple test route to verify server is working
+// Custom root endpoint for Render/health
+app.get('/', (req, res) => {
+  res.send("WarmDelights Backend is live!");
+});
+
+// Health check and test image endpoints
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });
 });
-
-// Test route to verify image serving
 app.get('/api/test-image', (req, res) => {
-  res.json({ 
+  res.json({
     message: 'Image test endpoint',
-    imageUrl: '/uploads/example.jpg' // Replace with actual test image if available
+    imageUrl: '/uploads/example.jpg'
   });
 });
 
