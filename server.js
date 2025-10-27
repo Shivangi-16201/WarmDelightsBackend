@@ -28,7 +28,10 @@ if (!fs.existsSync(uploadsDir)) {
   console.log('Created uploads directory');
 }
 
-// Helmet security + proper CSP for images
+// Serve uploads dir as static files (NO custom CORS/header logic!)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Helmet security + CSP (for API endpoints, not for static uploads)
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -43,7 +46,7 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-// Updated CORS config to allow both localhost and Netlify
+// Updated CORS config to allow both localhost and Netlify/Render
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5000',
@@ -97,32 +100,6 @@ app.use(generalLimiter);
 // Body parsers
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Serve uploads dir with CORS headers
-app.use('/uploads', (req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', allowedOrigins.join(','));
-  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-  res.setHeader('Access-Control-Allow-Methods', 'GET');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.url.match(/\.(jpg|jpeg|png|gif|webp)$/)) {
-    res.setHeader('Cache-Control', 'public, max-age=86400');
-  }
-
-  next();
-}, express.static(path.join(__dirname, 'uploads'), {
-  setHeaders: (res, filePath) => {
-    if (filePath.endsWith('.jpg') || filePath.endsWith('.jpeg')) {
-      res.setHeader('Content-Type', 'image/jpeg');
-    } else if (filePath.endsWith('.png')) {
-      res.setHeader('Content-Type', 'image/png');
-    } else if (filePath.endsWith('.gif')) {
-      res.setHeader('Content-Type', 'image/gif');
-    } else if (filePath.endsWith('.webp')) {
-      res.setHeader('Content-Type', 'image/webp');
-    }
-  }
-}));
 
 // Add favicon.ico handler (no favicon, but no error)
 app.get('/favicon.ico', (req, res) => res.status(204));
