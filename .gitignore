@@ -40,3 +40,5 @@ Thumbs.db
 
 # Ignore test report folders
 test-results/
+
+scripts/

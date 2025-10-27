@@ -8,9 +8,9 @@ const createAdmin = async () => {
     
     const adminUser = new User({
       name: 'Admin User',
-      email: 'admin@warmdelights.com',
+      email: 'warmdelights11@gmail.com',
       password: 'admin123456', // This will be hashed automatically
-      phone: '1234567890',
+      phone: '8847306427',
       role: 'admin' // This is crucial!
     });
     

@@ -44,6 +44,8 @@ const createCustomOrder = async (req, res) => {
     try {
       if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
         await sendCustomOrderConfirmation(createdOrder);
+
+        console.log("Custom ORDER")
       }
     } catch (emailError) {
       console.error('Failed to send confirmation email:', emailError);

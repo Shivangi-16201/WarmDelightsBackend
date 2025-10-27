@@ -15,7 +15,7 @@ const transporter = nodemailer.createTransport({
 const sendOrderConfirmation = async (order, customer) => {
   try {
     const mailOptions = {
-      from: `"Warm Delights" <${process.env.EMAIL_USER}>`,
+      from: `<${process.env.EMAIL_USER}>`,
       to: customer.email,
       subject: `Order Confirmation - ${order.orderId}`,
       html: `
@@ -38,7 +38,7 @@ const sendCustomOrderConfirmation = async (customOrder) => {
   try {
     // 1. Customer confirmation
     const customerMailOptions = {
-      from: `"Warm Delights" <${process.env.EMAIL_USER}>`,
+      from: `<${process.env.EMAIL_USER}>`,
       to: customOrder.email,
       subject: 'Custom Order Request Received',
       html: `
