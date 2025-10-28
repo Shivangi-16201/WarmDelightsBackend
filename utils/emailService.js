@@ -12,22 +12,23 @@ const nodemailer = require('nodemailer');
 // });
 
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
+  host: process.env.EMAIL_HOST || "smtp.gmail.com",
+  port: process.env.EMAIL_PORT || 587,
   secure: false,
   auth: {
-    user: "warmdelights11@gmail.com",
-    pass: "otac ebyd xqwx fnmq",
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
   },
 });
+
 
 // Send order confirmation email (regular order, not custom order)
 const sendOrderConfirmation = async (order, customer) => {
   console.log("SEND ORDER CONFIRMATION:",process.env.EMAIL_USER)
   try {
     const mailOptions = {
-      from: "warmdelights11@gmail.com",
-      // from: `${process.env.EMAIL_USER}`,
+      // from: "warmdelights11@gmail.com",
+      from: process.env.EMAIL_USER,
       to: customer.email,
       subject: `Order Confirmation - ${order.orderId}`,
       html: `
@@ -50,8 +51,8 @@ const sendCustomOrderConfirmation = async (customOrder) => {
   try {
     // 1. Customer confirmation
     const customerMailOptions = {
-      from: "warmdelights11@gmail.com",
-      // from: `${process.env.EMAIL_USER}`,
+      // from: "warmdelights11@gmail.com",
+      from: process.env.EMAIL_USER,
       to: customOrder.email,
       subject: 'Custom Order Request Received',
       html: `
@@ -90,8 +91,8 @@ const sendCustomOrderConfirmation = async (customOrder) => {
 
     // 2. Admin/bakery mailbox
     const adminMailOptions = {
-      from: "warmdelights11@gmail.com",
-      // from: `${process.env.EMAIL_USER}`,
+      // from: "warmdelights11@gmail.com",
+      from: process.env.EMAIL_USER,
       to: process.env.EMAIL_USER,
       subject: 'New Custom Order Received',
       html: `
