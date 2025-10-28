@@ -25,6 +25,11 @@ const transporter = nodemailer.createTransport({
 // Send order confirmation email (regular order, not custom order)
 const sendOrderConfirmation = async (order, customer) => {
   console.log("SEND ORDER CONFIRMATION:",process.env.EMAIL_USER)
+  // Add the debug lines here:
+  console.log("EMAIL_USER:", process.env.EMAIL_USER);
+  console.log("EMAIL_PASS is defined:", !!process.env.EMAIL_PASS);
+  console.log("EMAIL_HOST:", process.env.EMAIL_HOST);
+  console.log("EMAIL_PORT:", process.env.EMAIL_PORT);
   try {
     const mailOptions = {
       // from: "warmdelights11@gmail.com",
@@ -50,6 +55,12 @@ const sendOrderConfirmation = async (order, customer) => {
 const sendCustomOrderConfirmation = async (customOrder) => {
   try {
     // 1. Customer confirmation
+    // Add the debug lines here:
+    console.log("EMAIL_USER:", process.env.EMAIL_USER);
+    console.log("EMAIL_PASS is defined:", !!process.env.EMAIL_PASS);
+    console.log("EMAIL_HOST:", process.env.EMAIL_HOST);
+    console.log("EMAIL_PORT:", process.env.EMAIL_PORT);
+    
     const customerMailOptions = {
       // from: "warmdelights11@gmail.com",
       from: process.env.EMAIL_USER,
