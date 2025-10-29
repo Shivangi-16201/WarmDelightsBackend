@@ -147,8 +147,34 @@ const getRecentActivity = async (req, res) => {
   }
 };
 
+// In analyticsController.js
+const getWhatsAppOrdersCount = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    let dateFilter = {};
+    if (startDate && endDate) {
+      dateFilter = {
+        createdAt: {
+          $gte: new Date(startDate),
+          $lte: new Date(endDate),
+        },
+      };
+    }
+
+    const count = await Analytics.countDocuments({
+      ...dateFilter,
+      eventType: 'whatsapp_order',
+    });
+
+    res.json({ count });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   trackEvent,
   getAnalytics,
   getRecentActivity,
+  getWhatsAppOrdersCount,
 };
